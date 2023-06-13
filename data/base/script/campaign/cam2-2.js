@@ -104,8 +104,7 @@ function wave2()
 		alternate: true,
 		altIdx: 0
 	};
-	camSetVtolData(THE_COLLECTIVE, "vtolAppearPos", "vtolRemoveZone", list, "COCommandCenter", ext);
-	};
+	camSetVtolData(THE_COLLECTIVE, "vtolAppearPos", "vtolRemoveZone", list, camChangeOnDiff(camMinutesToMilliseconds(6)), "COCommandCenter", ext);
 }
 
 function wave3()
@@ -116,8 +115,7 @@ function wave3()
 		alternate: true,
 		altIdx: 0
 	};
-	camSetVtolData(THE_COLLECTIVE, "vtolAppearPos", "vtolRemoveZone", list, "COCommandCenter", ext);
-	};
+	camSetVtolData(THE_COLLECTIVE, "vtolAppearPos", "vtolRemoveZone", list, camChangeOnDiff(camMinutesToMilliseconds(6)), "COCommandCenter", ext);
 }
 
 function vtolAttack()
@@ -131,7 +129,6 @@ function vtolAttack()
 	camSetVtolData(THE_COLLECTIVE, "vtolAppearPos", "vtolRemoveZone", list, camChangeOnDiff(camMinutesToMilliseconds(6)), "COCommandCenter", ext);
 	queue("wave2", camChangeOnDiff(camSecondsToMilliseconds(30)));
 	queue("wave3", camChangeOnDiff(camSecondsToMilliseconds(60)));
-	};
 }
 
 //Order the truck to build some defenses.
