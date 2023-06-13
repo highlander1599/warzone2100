@@ -82,15 +82,42 @@ function ambushPlayer()
 	});
 }
 
-function vtolAttack()
+function wave2()
 {
-	var list = [cTempl.colcbv, cTempl.colatv];
+	var list = [cTempl.colatv, cTempl.colatv];
 	var ext = {
 		limit: [4, 4], //paired with list array
 		alternate: true,
 		altIdx: 0
 	};
-	camSetVtolData(THE_COLLECTIVE, "vtolAppearPos", "vtolRemove", list, camChangeOnDiff(camMinutesToMilliseconds(5)), "COCommandCenter", ext);
+	camSetVtolData(THE_COLLECTIVE, "vtolAppearPos", "vtolRemoveZone", list, "COCommandCenter", ext);
+	};
+}
+
+function wave3()
+{
+	var list = [cTempl.colcbv, cTempl.colcbv];
+	var ext = {
+		limit: [4, 4], //paired with list array
+		alternate: true,
+		altIdx: 0
+	};
+	camSetVtolData(THE_COLLECTIVE, "vtolAppearPos", "vtolRemoveZone", list, "COCommandCenter", ext);
+	};
+}
+
+function vtolAttack()
+{
+	var list = [cTempl.colpbv, cTempl.colpbv];
+	var ext = {
+		limit: [4, 4], //paired with list array
+		alternate: true,
+		altIdx: 0
+	};
+	camSetVtolData(THE_COLLECTIVE, "vtolAppearPos", "vtolRemoveZone", list, camChangeOnDiff(camMinutesToMilliseconds(6)), "COCommandCenter", ext);
+	queue("wave2", camChangeOnDiff(camSecondsToMilliseconds(30)));
+	queue("wave3", camChangeOnDiff(camSecondsToMilliseconds(60)));
+	};
 }
 
 function truckDefense()

@@ -75,6 +75,8 @@ commrl: { body: "Body6SUPP", prop: "HalfTrack", weap: "Rocket-MRL" },
 commrp: { body: "Body6SUPP", prop: "tracked01", weap: "Rocket-Pod" },
 comorb: { body: "Body6SUPP", prop: "HalfTrack", weap: "Mortar2Mk1" },
 colcbv: { body: "Body2SUP", prop: "V-Tol", weap: "Bomb1-VTOL-LtHE" },
+colpbv: { body: "Body2SUP", prop: "V-Tol", weap: "Bomb3-VTOL-LtINC" },
+colatv: { body: "Body2SUP", prop: "V-Tol", weap: "Rocket-VTOL-LtA-T" },
 prhct: { body: "Body11ABT", prop: "tracked01", weap: "Cannon375mmMk1" },
 prltat: { body: "Body5REC", prop: "tracked01", weap: "Rocket-LtA-T" },
 prrept: { body: "Body5REC", prop: "tracked01", weap: "LightRepair1" },
@@ -84,7 +86,6 @@ prrept: { body: "Body5REC", prop: "tracked01", weap: "LightRepair1" },
 // CAM_2_B
 comatt: { body: "Body6SUPP", prop: "tracked01", weap: "Rocket-LtA-T" },
 comit: { body: "Body6SUPP", prop: "tracked01", weap: "Flame2" },
-colatv: { body: "Body2SUP", prop: "V-Tol", weap: "Rocket-VTOL-LtA-T" },
 
 // SUB_2_2
 comtath: { body: "Body6SUPP", prop: "hover01", weap: "Rocket-LtA-T" },

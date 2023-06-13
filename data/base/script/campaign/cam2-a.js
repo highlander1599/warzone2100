@@ -142,10 +142,42 @@ function mapEdgeDroids()
 	camSendReinforcement(THE_COLLECTIVE, camMakePos("groundUnitPos"), droids, CAM_REINFORCE_GROUND);
 }
 
+function wave2()
+{
+	var list = [cTempl.colatv, cTempl.colatv];
+	var ext = {
+		limit: [4, 4], //paired with list array
+		alternate: true,
+		altIdx: 0
+	};
+	camSetVtolData(THE_COLLECTIVE, "vtolAppearPos", "vtolRemoveZone", list, "COCommandCenter", ext);
+	};
+}
+
+function wave3()
+{
+	var list = [cTempl.colcbv, cTempl.colcbv];
+	var ext = {
+		limit: [4, 4], //paired with list array
+		alternate: true,
+		altIdx: 0
+	};
+	camSetVtolData(THE_COLLECTIVE, "vtolAppearPos", "vtolRemoveZone", list, "COCommandCenter", ext);
+	};
+}
+
 function vtolAttack()
 {
-	var list = [cTempl.colcbv];
-	camSetVtolData(THE_COLLECTIVE, "vtolAppearPos", "vtolRemoveZone", list, camChangeOnDiff(camMinutesToMilliseconds(3)), "COCommandCenter");
+	var list = [cTempl.colpbv, cTempl.colpbv];
+	var ext = {
+		limit: [4, 4], //paired with list array
+		alternate: true,
+		altIdx: 0
+	};
+	camSetVtolData(THE_COLLECTIVE, "vtolAppearPos", "vtolRemoveZone", list, camChangeOnDiff(camMinutesToMilliseconds(4)), "COCommandCenter", ext);
+	queue("wave2", camChangeOnDiff(camSecondsToMilliseconds(30)));
+	queue("wave3", camChangeOnDiff(camSecondsToMilliseconds(60)));
+	};
 }
 
 function groupPatrol()
