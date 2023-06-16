@@ -5282,6 +5282,10 @@ static void stopJoining(std::shared_ptr<WzTitleUI> parent)
 		player.resetAll();
 	}
 	NetPlay.players.resize(MAX_CONNECTED_PLAYERS);
+	for (size_t i = 0; i < NetPlay.scriptSetPlayerDataStrings.size(); i++)
+	{
+		NetPlay.scriptSetPlayerDataStrings[i].clear();
+	}
 }
 
 static void resetPlayerPositions()
@@ -8105,6 +8109,8 @@ inline void to_json(nlohmann::json& j, const MULTIPLAYERGAME& p) {
 	j["isRandom"] = p.isRandom;
 	j["techLevel"] = p.techLevel;
 	j["inactivityMinutes"] = p.inactivityMinutes;
+	j["gameTimeLimitMinutes"] = p.gameTimeLimitMinutes;
+	j["playerLeaveMode"] = p.playerLeaveMode;
 }
 
 inline void from_json(const nlohmann::json& j, MULTIPLAYERGAME& p) {
@@ -8132,6 +8138,24 @@ inline void from_json(const nlohmann::json& j, MULTIPLAYERGAME& p) {
 	{
 		// default to the old (4.2.0 beta-era) value of 4 minutes
 		p.inactivityMinutes = 4;
+	}
+	if (j.contains("gameTimeLimitMinutes"))
+	{
+		p.gameTimeLimitMinutes = j.at("gameTimeLimitMinutes").get<uint32_t>();
+	}
+	else
+	{
+		// default to the old (pre-4.4.0) default value of 0 minutes (disabled)
+		p.gameTimeLimitMinutes = 0;
+	}
+	if (j.contains("playerLeaveMode"))
+	{
+		p.playerLeaveMode = j.at("playerLeaveMode").get<PLAYER_LEAVE_MODE>();
+	}
+	else
+	{
+		// default to the old (pre-4.4.0) behavior of destroy resources
+		p.playerLeaveMode = PLAYER_LEAVE_MODE::DESTROY_RESOURCES;
 	}
 }
 

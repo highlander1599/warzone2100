@@ -93,6 +93,7 @@
 #include "console.h"
 #include "multigifts.h"
 #include "wzscriptdebug.h"
+#include "gamehistorylogger.h"
 #include "build_tools/autorevision.h"
 
 #if defined(__clang__)
@@ -4613,6 +4614,14 @@ static bool loadMainFile(const std::string &fileName)
 	{
 		game.inactivityMinutes = save.value("inactivityMinutes").toUInt();
 	}
+	if (save.contains("gameTimeLimitMinutes"))
+	{
+		game.gameTimeLimitMinutes = save.value("gameTimeLimitMinutes").toUInt();
+	}
+	if (save.contains("playerLeaveMode"))
+	{
+		game.playerLeaveMode = static_cast<PLAYER_LEAVE_MODE>(save.value("playerLeaveMode").toInt());
+	}
 
 	save.beginArray("players");
 	while (save.remainingArrayItems() > 0)
@@ -4629,6 +4638,17 @@ static bool loadMainFile(const std::string &fileName)
 		save.nextArrayItem();
 	}
 	save.endArray();
+
+	const auto& rootObj = save.currentJsonValue();
+	auto it = rootObj.find("scriptSetPlayerDataStrings");
+	if (it != rootObj.end() && it.value().is_array())
+	{
+		const auto& arr = it.value();
+		for (size_t idx = 0; idx < std::min<size_t>(arr.size(), NetPlay.scriptSetPlayerDataStrings.size()); idx++)
+		{
+			NetPlay.scriptSetPlayerDataStrings[idx] = arr[idx].get<std::unordered_map<std::string, std::string>>();
+		}
+	}
 
 	return true;
 }
@@ -4659,6 +4679,19 @@ static bool loadMainFileFinal(const std::string &fileName)
 		}
 		setMultiPlayRecentScore(index, save.value("recentScore", 0).toUInt());
 		setMultiPlayUnitsKilled(index, save.value("recentKills", 0).toUInt());
+		setMultiPlayRecentDroidsKilled(index, save.value("recentDroidsKilled", 0).toUInt());
+		setMultiPlayRecentDroidsLost(index, save.value("recentDroidsLost", 0).toUInt());
+		setMultiPlayRecentDroidsBuilt(index, save.value("recentDroidsBuilt", 0).toUInt());
+		setMultiPlayRecentStructuresKilled(index, save.value("recentStructuresKilled", 0).toUInt());
+		setMultiPlayRecentStructuresLost(index, save.value("recentStructuresLost", 0).toUInt());
+		setMultiPlayRecentStructuresBuilt(index, save.value("recentStructuresBuilt", 0).toUInt());
+		setMultiPlayRecentPowerLost(index, save.value("recentPowerLost", 0).toUint64());
+		setMultiPlayRecentDroidPowerLost(index, save.value("recentDroidPowerLost", 0).toUint64());
+		setMultiPlayRecentStructurePowerLost(index, save.value("recentStructurePowerLost", 0).toUint64());
+		setMultiPlayRecentPowerWon(index, save.value("recentPowerWon", 0).toUint64());
+		setMultiPlayRecentResearchComplete(index, save.value("recentResearchComplete", 0).toUInt());
+		setMultiPlayRecentResearchPotential(index, save.value("recentResearchPotential", 0).toUint64());
+		setMultiPlayRecentResearchPerformance(index, save.value("recentResearchPerformance", 0).toUint64());
 		save.nextArrayItem();
 	}
 	save.endArray();
@@ -4754,6 +4787,19 @@ static bool writeMainFile(const std::string &fileName, SDWORD saveType)
 		save.setValue("nameAI", getAIName(i));
 		save.setValue("recentScore", getMultiPlayRecentScore(i));
 		save.setValue("recentKills", getMultiPlayUnitsKilled(i));
+		save.setValue("recentDroidsKilled", getMultiStats(i).recentDroidsKilled);
+		save.setValue("recentDroidsLost", getMultiStats(i).recentDroidsLost);
+		save.setValue("recentDroidsBuilt", getMultiStats(i).recentDroidsBuilt);
+		save.setValue("recentStructuresKilled", getMultiStats(i).recentStructuresKilled);
+		save.setValue("recentStructuresLost", getMultiStats(i).recentStructuresLost);
+		save.setValue("recentStructuresBuilt", getMultiStats(i).recentStructuresBuilt);
+		save.setValue("recentPowerLost", getMultiStats(i).recentPowerLost);
+		save.setValue("recentDroidPowerLost", getMultiStats(i).recentDroidPowerLost);
+		save.setValue("recentStructurePowerLost", getMultiStats(i).recentStructurePowerLost);
+		save.setValue("recentPowerWon", getMultiStats(i).recentPowerWon);
+		save.setValue("recentResearchComplete", getMultiStats(i).recentResearchComplete);
+		save.setValue("recentResearchPotential", getMultiStats(i).recentResearchPotential);
+		save.setValue("recentResearchPerformance", getMultiStats(i).recentResearchPerformance);
 
 		save.nextArrayItem();
 	}
@@ -4800,6 +4846,19 @@ static bool writeMainFile(const std::string &fileName, SDWORD saveType)
 	save.setValue("challengeActive", challengeActive);
 	save.setValue("builtInMap", builtInMap);
 	save.setValue("inactivityMinutes", game.inactivityMinutes);
+	save.setValue("gameTimeLimitMinutes", game.gameTimeLimitMinutes);
+	save.setValue("playerLeaveMode", game.playerLeaveMode);
+
+	save.beginArray("scriptSetPlayerDataStrings");
+	for (size_t i = 0; i < NetPlay.scriptSetPlayerDataStrings.size(); ++i)
+	{
+		for (const auto& kv : NetPlay.scriptSetPlayerDataStrings[i])
+		{
+			save.setValue(WzString::fromUtf8(kv.first), kv.second);
+		}
+		save.nextArrayItem();
+	}
+	save.endArray();
 
 	return true;
 }

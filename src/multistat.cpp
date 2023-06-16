@@ -209,7 +209,6 @@ bool setMultiStats(uint32_t playerIndex, PLAYERSTATS plStats, bool bLocal)
 		NETuint32_t(&playerStats[playerIndex].totalScore);
 		NETuint32_t(&playerStats[playerIndex].recentKills);
 		NETuint32_t(&playerStats[playerIndex].recentScore);
-		NETuint64_t(&playerStats[playerIndex].recentPowerLost);
 
 		EcKey::Key identity;
 		if (!playerStats[playerIndex].identity.empty())
@@ -261,7 +260,6 @@ void recvMultiStats(NETQUEUE queue)
 		NETuint32_t(&playerStats[playerIndex].totalScore);
 		NETuint32_t(&playerStats[playerIndex].recentKills);
 		NETuint32_t(&playerStats[playerIndex].recentScore);
-		NETuint64_t(&playerStats[playerIndex].recentPowerLost);
 
 		EcKey::Key identity;
 		NETbytes(&identity);
@@ -299,7 +297,9 @@ void recvMultiStats(NETQUEUE queue)
 			{
 				std::string senderPublicKeyB64 = base64Encode(playerStats[playerIndex].identity.toBytes(EcKey::Public));
 				std::string senderIdentityHash = playerStats[playerIndex].identity.publicHashString();
-				wz_command_interface_output("WZEVENT: player identity UNVERIFIED: %" PRIu32 " %s %s\n", playerIndex, senderPublicKeyB64.c_str(), senderIdentityHash.c_str());
+				std::string sendername = NetPlay.players[playerIndex].name;
+				std::string senderNameB64 = base64Encode(std::vector<unsigned char>(sendername.begin(), sendername.end()));
+				wz_command_interface_output("WZEVENT: player identity UNVERIFIED: %" PRIu32 " %s %s %s %s\n", playerIndex, senderPublicKeyB64.c_str(), senderIdentityHash.c_str(), senderNameB64.c_str(), NetPlay.players[playerIndex].IPtextAddress);
 			}
 			else
 			{
@@ -425,8 +425,20 @@ bool loadMultiStats(char *sPlayerName, PLAYERSTATS *st)
 
 	// reset recent scores
 	st->recentKills = 0;
+	st->recentDroidsKilled = 0;
+	st->recentDroidsLost = 0;
+	st->recentDroidsBuilt = 0;
+	st->recentStructuresKilled = 0;
+	st->recentStructuresLost = 0;
+	st->recentStructuresBuilt = 0;
 	st->recentScore = 0;
+	st->recentResearchComplete = 0;
 	st->recentPowerLost = 0;
+	st->recentDroidPowerLost = 0;
+	st->recentStructurePowerLost = 0;
+	st->recentPowerWon = 0;
+	st->recentResearchPerformance = 0;
+	st->recentResearchPotential = 0;
 
 	return true;
 }
@@ -531,6 +543,26 @@ static inline uint32_t calcObjectCost(const BASE_OBJECT *psObj)
 	return 0;
 }
 
+void incrementMultiStatsResearchPerformance(UDWORD player)
+{
+	if (player >= MAX_PLAYERS)
+	{
+		return;
+	}
+	// printf("Increment performance, player %d was %ld\n", player, playerStats[player].recentResearchPerformance);
+	playerStats[player].recentResearchPerformance += 1;
+}
+
+void incrementMultiStatsResearchPotential(UDWORD player)
+{
+	if (player >= MAX_PLAYERS)
+	{
+		return;
+	}
+	// printf("Increment potential, player %d was %ld\n", player, playerStats[player].recentResearchPotential);
+	playerStats[player].recentResearchPotential += 1;
+}
+
 // update kills
 void updateMultiStatsKills(BASE_OBJECT *psKilled, UDWORD player)
 {
@@ -538,7 +570,7 @@ void updateMultiStatsKills(BASE_OBJECT *psKilled, UDWORD player)
 	{
 		return;
 	}
-	if (NetPlay.bComms)
+	if (bMultiPlayer)
 	{
 		if (psKilled != nullptr)
 		{
@@ -548,14 +580,59 @@ void updateMultiStatsKills(BASE_OBJECT *psKilled, UDWORD player)
 			}
 			if (psKilled->player < MAX_PLAYERS)
 			{
-				playerStats[psKilled->player].recentPowerLost += static_cast<uint64_t>(calcObjectCost(psKilled));
+				uint64_t pwrCost = static_cast<uint64_t>(calcObjectCost(psKilled));
+				playerStats[psKilled->player].recentPowerLost += pwrCost;
+				playerStats[player].recentPowerWon += pwrCost;
+
+				if (isDroid(psKilled))
+				{
+					playerStats[psKilled->player].recentDroidPowerLost += pwrCost;
+					playerStats[psKilled->player].recentDroidsLost++;
+					playerStats[player].recentDroidsKilled++;
+				}
+				else if (isStructure(psKilled))
+				{
+					playerStats[psKilled->player].recentStructurePowerLost += pwrCost;
+					playerStats[psKilled->player].recentStructuresLost++;
+					playerStats[player].recentStructuresKilled++;
+				}
 			}
-			++playerStats[player].totalKills;
+			if (NetPlay.bComms)
+			{
+				++playerStats[player].totalKills;
+			}
 			++playerStats[player].recentKills;
 		}
 		return;
 	}
 	++playerStats[player].recentKills;
+}
+
+void updateMultiStatsBuilt(BASE_OBJECT *psBuilt)
+{
+	if (psBuilt->player >= MAX_PLAYERS)
+	{
+		return;
+	}
+
+	if (isDroid(psBuilt))
+	{
+		playerStats[psBuilt->player].recentDroidsBuilt++;
+	}
+	else if (isStructure(psBuilt))
+	{
+		playerStats[psBuilt->player].recentStructuresBuilt++;
+	}
+}
+
+void updateMultiStatsResearchComplete(RESEARCH *psResearch, UDWORD player)
+{
+	if (player >= MAX_PLAYERS)
+	{
+		return;
+	}
+
+	playerStats[player].recentResearchComplete++;
 }
 
 class KnownPlayersDB {
@@ -928,13 +1005,90 @@ uint32_t getSelectedPlayerUnitsKilled()
 	}
 }
 
+void setMultiPlayRecentDroidsKilled(uint32_t player, uint32_t value)
+{
+	playerStats[player].recentDroidsKilled = value;
+}
+
+void setMultiPlayRecentDroidsLost(uint32_t player, uint32_t value)
+{
+	playerStats[player].recentDroidsLost = value;
+}
+
+void setMultiPlayRecentDroidsBuilt(uint32_t player, uint32_t value)
+{
+	playerStats[player].recentDroidsBuilt = value;
+}
+
+void setMultiPlayRecentStructuresKilled(uint32_t player, uint32_t value)
+{
+	playerStats[player].recentStructuresKilled = value;
+}
+
+void setMultiPlayRecentStructuresLost(uint32_t player, uint32_t value)
+{
+	playerStats[player].recentStructuresLost = value;
+}
+
+void setMultiPlayRecentStructuresBuilt(uint32_t player, uint32_t value)
+{
+	playerStats[player].recentStructuresBuilt = value;
+}
+
+void setMultiPlayRecentPowerLost(uint32_t player, uint64_t powerLost)
+{
+	playerStats[player].recentPowerLost = powerLost;
+}
+
+void setMultiPlayRecentDroidPowerLost(uint32_t player, uint64_t powerLost)
+{
+	playerStats[player].recentDroidPowerLost = powerLost;
+}
+
+void setMultiPlayRecentStructurePowerLost(uint32_t player, uint64_t powerLost)
+{
+	playerStats[player].recentStructurePowerLost = powerLost;
+}
+
+void setMultiPlayRecentPowerWon(uint32_t player, uint64_t powerWon)
+{
+	playerStats[player].recentPowerWon = powerWon;
+}
+
+void setMultiPlayRecentResearchComplete(uint32_t player, uint32_t value)
+{
+	playerStats[player].recentResearchComplete = value;
+}
+
+void setMultiPlayRecentResearchPotential(uint32_t player, uint64_t value)
+{
+	playerStats[player].recentResearchPotential = value;
+}
+
+void setMultiPlayRecentResearchPerformance(uint32_t player, uint64_t value)
+{
+	playerStats[player].recentResearchPerformance = value;
+}
+
 void resetRecentScoreData()
 {
 	for (unsigned int i = 0; i < MAX_CONNECTED_PLAYERS; ++i)
 	{
 		playerStats[i].recentKills = 0;
+		playerStats[i].recentDroidsKilled = 0;
+		playerStats[i].recentDroidsLost = 0;
+		playerStats[i].recentDroidsBuilt = 0;
+		playerStats[i].recentStructuresKilled = 0;
+		playerStats[i].recentStructuresLost = 0;
+		playerStats[i].recentStructuresBuilt = 0;
 		playerStats[i].recentScore = 0;
+		playerStats[i].recentResearchComplete = 0;
 		playerStats[i].recentPowerLost = 0;
+		playerStats[i].recentDroidPowerLost = 0;
+		playerStats[i].recentStructurePowerLost = 0;
+		playerStats[i].recentPowerWon = 0;
+		playerStats[i].recentResearchPerformance = 0;
+		playerStats[i].recentResearchPotential = 0;
 		playerStats[i].identity.clear();
 		playerStats[i].autorating = PLAYERSTATS::Autorating();
 	}
@@ -972,9 +1126,32 @@ inline void to_json(nlohmann::json& j, const PLAYERSTATS& p) {
 	j["totalKills"] = p.totalKills;
 	j["totalScore"] = p.totalScore;
 	j["recentKills"] = p.recentKills;
+	j["recentDroidsKilled"] = p.recentDroidsKilled;
+	j["recentDroidsLost"] = p.recentDroidsLost;
+	j["recentDroidsBuilt"] = p.recentDroidsBuilt;
+	j["recentStructuresKilled"] = p.recentStructuresKilled;
+	j["recentStructuresLost"] = p.recentStructuresLost;
+	j["recentStructuresBuilt"] = p.recentStructuresBuilt;
 	j["recentScore"] = p.recentScore;
+	j["recentResearchComplete"] = p.recentResearchComplete;
 	j["recentPowerLost"] = p.recentPowerLost;
+	j["recentDroidPowerLost"] = p.recentDroidPowerLost;
+	j["recentStructurePowerLost"] = p.recentStructurePowerLost;
+	j["recentPowerWon"] = p.recentPowerWon;
+	j["recentResearchPotential"] = p.recentResearchPotential;
+	j["recentResearchPerformance"] = p.recentResearchPerformance;
 	j["identity"] = p.identity;
+}
+
+template <typename T>
+optional<T> optGetJSONValue(const nlohmann::json& j, const std::string& key)
+{
+	auto it = j.find(key);
+	if (it == j.end())
+	{
+		return nullopt;
+	}
+	return it->get<T>();
 }
 
 inline void from_json(const nlohmann::json& j, PLAYERSTATS& k) {
@@ -987,6 +1164,19 @@ inline void from_json(const nlohmann::json& j, PLAYERSTATS& k) {
 	k.recentScore = j.at("recentScore").get<uint32_t>();
 	k.recentPowerLost = j.at("recentPowerLost").get<uint64_t>();
 	k.identity = j.at("identity").get<EcKey>();
+	// WZ 4.4.0+:
+	k.recentDroidsKilled = optGetJSONValue<uint32_t>(j, "recentDroidsKilled").value_or(0);
+	k.recentDroidsLost = optGetJSONValue<uint32_t>(j, "recentDroidsLost").value_or(0);
+	k.recentDroidsBuilt = optGetJSONValue<uint32_t>(j, "recentDroidsBuilt").value_or(0);
+	k.recentStructuresKilled = optGetJSONValue<uint32_t>(j, "recentStructuresKilled").value_or(0);
+	k.recentStructuresLost = optGetJSONValue<uint32_t>(j, "recentStructuresLost").value_or(0);
+	k.recentStructuresBuilt = optGetJSONValue<uint32_t>(j, "recentStructuresBuilt").value_or(0);
+	k.recentResearchComplete = optGetJSONValue<uint32_t>(j, "recentResearchComplete").value_or(0);
+	k.recentDroidPowerLost = optGetJSONValue<uint64_t>(j, "recentDroidPowerLost").value_or(0);
+	k.recentStructurePowerLost = optGetJSONValue<uint64_t>(j, "recentStructurePowerLost").value_or(0);
+	k.recentPowerWon = optGetJSONValue<uint64_t>(j, "recentPowerWon").value_or(0);
+	k.recentResearchPotential = optGetJSONValue<uint64_t>(j, "recentResearchPotential").value_or(0);
+	k.recentResearchPerformance = optGetJSONValue<uint64_t>(j, "recentResearchPerformance").value_or(0);
 }
 
 bool saveMultiStatsToJSON(nlohmann::json& json)

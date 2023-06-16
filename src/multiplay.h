@@ -29,6 +29,7 @@
 #include "lib/framework/vector.h"
 #include "lib/framework/crc.h"
 #include "lib/netplay/nettypes.h"
+#include "multiplaydefs.h"
 #include "orderdef.h"
 #include "stringdef.h"
 #include "messagedef.h"
@@ -73,9 +74,11 @@ struct MULTIPLAYERGAME
 	bool        isRandom;                   // If a map is non-static.
 	uint32_t	techLevel;					// what technology level is being used
 	uint32_t	inactivityMinutes;			// The number of minutes without active play before a player should be considered "inactive". (0 = disable activity alerts)
+	uint32_t	gameTimeLimitMinutes;		// The number of minutes before the game automatically ends (0 = disable time limit)
+	PLAYER_LEAVE_MODE	playerLeaveMode;	// The behavior used for when players leave a game
 
 	// NOTE: If adding to this struct, a lot of things probably require changing
-	// (send/recvOptions? to/from_json in multiint.h.cpp?)
+	// (send/recvOptions? loadMainFile/writeMainFile? to/from_json in multiint.h.cpp?)
 };
 
 struct MULTISTRUCTLIMITS
@@ -323,6 +326,7 @@ VIEWDATA *CreateBeaconViewData(SDWORD sender, UDWORD LocX, UDWORD LocY);
 void setPlayerMuted(uint32_t playerIdx, bool muted);
 bool isPlayerMuted(uint32_t sender);
 
+bool setGameStoryLogPlayerDataValue(uint32_t playerIndex, const std::string& key_str, const std::string& value_str);
 bool makePlayerSpectator(uint32_t player_id, bool removeAllStructs = false, bool quietly = false);
 
 class WZGameReplayOptionsHandler : public ReplayOptionsHandler

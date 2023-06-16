@@ -77,6 +77,7 @@
 #include "chat.h"
 #include "scores.h"
 #include "data.h"
+#include "gamehistorylogger.h"
 
 #include <list>
 
@@ -2393,6 +2394,7 @@ bool wzapi::gameOverMessage(WZAPI_PARAMS(bool gameWon, optional<bool> _showBackD
 	{
 		updateChallenge(gameWon);
 	}
+	GameStoryLogger::instance().logGameOver();
 	if (autogame_enabled())
 	{
 		debug(LOG_WARNING, "Autogame completed successfully!");
@@ -3281,6 +3283,18 @@ wzapi::no_return_value wzapi::fireWeaponAtObj(WZAPI_PARAMS(std::string weaponNam
 
 	proj_SendProjectile(&sWeapon, nullptr, player, target, psObj, true, 0);
 	return {};
+}
+
+//-- ## setGameStoryLogPlayerDataValue(player, key_str, value_str)
+//--
+//-- Set a key + value string associated with a player, to be output to the playerData in the game story log (4.4+ only)
+//-- (Intended to be called from endconditions.js to pass a useful string that describes the player state for display-only purposes.)
+//-- (Not currently intended to be called from anywhere else.)
+//--
+bool wzapi::setGameStoryLogPlayerDataValue(WZAPI_PARAMS(int player, std::string key_str, std::string value_str))
+{
+	SCRIPT_ASSERT_PLAYER(false, context, player);
+	return ::setGameStoryLogPlayerDataValue(static_cast<uint32_t>(player), key_str, value_str);
 }
 
 //-- ## transformPlayerToSpectator(player)

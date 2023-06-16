@@ -193,6 +193,12 @@ class Team
 	setState(state)
 	{
 		this.state = state;
+		this.players.forEach(
+			(player) =>
+			{
+				setGameStoryLogPlayerDataValue(player.playNum, "usertype", this.state);
+			}
+		);
 		if (state ===  STATE_winner || state === STATE_loser ||  state === STATE_spectator)
 		{
 			this.players.forEach(
@@ -343,11 +349,32 @@ function conditions_eventGameInit()
 		setTimer("activityAlert", 10*1000);
 	}
 	setTimer("checkEndConditions", 3000);
+
+	if (gameTimeLimit > 0)
+	{
+		queue("timeOutGameTenMinWarning", gameTimeLimit - (10 * 60 * 1000));
+		queue("timeOutGame", gameTimeLimit);
+	}
 }
 
 function conditions_eventGameLoaded()
 {
 	createTeams();
+}
+
+function timeOutGameTenMinWarning()
+{
+	console(
+		_("Host-configured game time limit is approaching. If there is no winner within 10 minutes, the game will end.")
+	);
+}
+
+function timeOutGame()
+{
+	console(
+		_("Host-configured game time limit exceeded. Game is over.")
+	);
+	gameOverMessage(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////

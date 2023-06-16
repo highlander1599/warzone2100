@@ -60,6 +60,8 @@
 #include "game.h"
 #include "warzoneconfig.h"
 #include "challenge.h"
+#include "multistat.h"
+#include "gamehistorylogger.h"
 
 #include <set>
 #include <memory>
@@ -605,6 +607,10 @@ wzapi::scripting_instance* scripting_engine::loadPlayerScript(const WzString& pa
 	globalVars["challenge"] = challengeActive;
 	//== * ```idleTime``` The amount of game time without active play before a player should be considered "inactive". (0 = disable activity alerts / AFK check) (4.2.0+ only)
 	globalVars["idleTime"] = game.inactivityMinutes * 60 * 1000;
+	//== * ```gameTimeLimit``` The game time limit (match will automatically end if it reaches this duration). (0 = disable limit) (4.4.0+ only)
+	globalVars["gameTimeLimit"] = game.gameTimeLimitMinutes * 60 * 1000;
+	//== * ```playerLeaveMode``` The mode used to handle human players leaving a multiplayer game in progress. (0 = destroy resources, 1 = split resources with team) (4.4.0+ only)
+	globalVars["playerLeaveMode"] = static_cast<uint8_t>(game.playerLeaveMode);
 
 	pNewInstance->setSpecifiedGlobalVariables(globalVars, wzapi::GlobalVariableFlags::ReadOnly | wzapi::GlobalVariableFlags::DoNotSave);
 
@@ -1155,6 +1161,7 @@ bool triggerEventPlayerLeft(int player)
 bool triggerEventCheatMode(bool entered)
 {
 	ASSERT(scriptsReady, "Scripts not initialized yet");
+	GameStoryLogger::instance().logDebugModeChange(entered);
 	for (auto *instance : scripts)
 	{
 		instance->handle_eventCheatMode(entered);
@@ -1189,6 +1196,13 @@ bool triggerEventDroidIdle(DROID *psDroid)
 bool triggerEventDroidBuilt(DROID *psDroid, STRUCTURE *psFactory)
 {
 	ASSERT(scriptsReady, "Scripts not initialized yet");
+
+	if (psFactory != nullptr) // Ignore droids that were gifted or cheated (debug add)
+	{
+		// Increment built count for droids built in a factory
+		updateMultiStatsBuilt(psDroid);
+	}
+
 	optional<const STRUCTURE *> opt_factory = (psFactory) ? optional<const STRUCTURE *>(psFactory) : nullopt;
 	for (auto *instance : scripts)
 	{
@@ -1211,6 +1225,13 @@ bool triggerEventDroidBuilt(DROID *psDroid, STRUCTURE *psFactory)
 bool triggerEventStructBuilt(STRUCTURE *psStruct, DROID *psDroid)
 {
 	ASSERT(scriptsReady, "Scripts not initialized yet");
+
+	if (psDroid != nullptr) // Ignore structures that were gifted or cheated (debug add)
+	{
+		// Increment structure count for structures built by a droid
+		updateMultiStatsBuilt(psStruct);
+	}
+
 	optional<const DROID *> opt_droid = (psDroid) ? optional<const DROID *>(psDroid) : nullopt;
 	for (auto *instance : scripts)
 	{
@@ -1332,6 +1353,10 @@ bool triggerEventResearched(RESEARCH *psResearch, STRUCTURE *psStruct, int playe
 		eventQueue.emplace(psResearch, psStruct, player);
 		return true;
 	}
+
+	updateMultiStatsResearchComplete(psResearch, player);
+	GameStoryLogger::instance().logResearchCompleted(psResearch, psStruct, player);
+
 	for (auto *instance : scripts)
 	{
 		int me = instance->player();

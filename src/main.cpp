@@ -108,6 +108,7 @@
 #include "updatemanager.h"
 #include "activity.h"
 #include "stdinreader.h"
+#include "gamehistorylogger.h"
 #if defined(ENABLE_DISCORD)
 #include "integrations/wzdiscordrpc.h"
 #endif
@@ -987,6 +988,8 @@ static void startGameLoop()
 	triggerEvent(TRIGGER_START_LEVEL);
 	screen_disableMapPreview();
 
+	GameStoryLogger::instance().logStartGame();
+
 	auto currentGameMode = ActivityManager::instance().getCurrentGameMode();
 	switch (currentGameMode)
 	{
@@ -1056,6 +1059,10 @@ static void stopGameLoop()
 				player.resetAll();
 			}
 			NetPlay.players.resize(MAX_CONNECTED_PLAYERS);
+			for (size_t i = 0; i < NetPlay.scriptSetPlayerDataStrings.size(); i++)
+			{
+				NetPlay.scriptSetPlayerDataStrings[i].clear();
+			}
 		}
 		closeLoadingScreen();
 		reloadMPConfig();
@@ -1073,6 +1080,8 @@ static void stopGameLoop()
 		// FIXME: This is required because of the disabling in startGameLoop()
 		wzSetWindowIsResizable(true);
 	}
+
+	GameStoryLogger::instance().reset();
 
 	gameInitialised = false;
 }

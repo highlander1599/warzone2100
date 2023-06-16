@@ -72,7 +72,9 @@ struct WARZONE_GLOBALS
 	int maxReplaysSaved = MAX_REPLAY_FILES;
 	int oldLogsLimit = MAX_OLD_LOGS;
 	uint32_t MPinactivityMinutes = 5;
+	uint32_t MPgameTimeLimitMinutes = 0; // default to unlimited
 	uint8_t MPopenSpectatorSlots = 0;
+	PLAYER_LEAVE_MODE MPplayerLeaveMode = PLAYER_LEAVE_MODE_DEFAULT;
 	int fogStart = 4000;
 	int fogEnd = 8000;
 	int lodDistanceBiasPercentage = WZ_LODDISTANCEPERCENTAGE_HIGH; // default to "High" to best match prior version behavior
@@ -512,6 +514,20 @@ void war_setMPInactivityMinutes(uint32_t minutes)
 	warGlobs.MPinactivityMinutes = minutes;
 }
 
+uint32_t war_getMPGameTimeLimitMinutes()
+{
+	return warGlobs.MPgameTimeLimitMinutes;
+}
+
+void war_setMPGameTimeLimitMinutes(uint32_t minutes)
+{
+	if (minutes > 0 && minutes < MIN_MPGAMETIMELIMIT_MINUTES)
+	{
+		minutes = MIN_MPGAMETIMELIMIT_MINUTES;
+	}
+	warGlobs.MPgameTimeLimitMinutes = minutes;
+}
+
 uint16_t war_getMPopenSpectatorSlots()
 {
 	return warGlobs.MPopenSpectatorSlots;
@@ -521,6 +537,16 @@ void war_setMPopenSpectatorSlots(uint16_t spectatorSlots)
 {
 	spectatorSlots = std::min<uint16_t>(spectatorSlots, MAX_SPECTATOR_SLOTS);
 	warGlobs.MPopenSpectatorSlots = spectatorSlots;
+}
+
+PLAYER_LEAVE_MODE war_getMPPlayerLeaveMode()
+{
+	return warGlobs.MPplayerLeaveMode;
+}
+
+void war_setMPPlayerLeaveMode(PLAYER_LEAVE_MODE mode)
+{
+	warGlobs.MPplayerLeaveMode = mode;
 }
 
 int war_getFogEnd()

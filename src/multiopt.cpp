@@ -102,6 +102,13 @@ void sendOptions()
 		game.inactivityMinutes = MIN_MPINACTIVITY_MINUTES;
 	}
 	NETuint32_t(&game.inactivityMinutes);
+	if (game.gameTimeLimitMinutes > 0 && game.gameTimeLimitMinutes < MIN_MPGAMETIMELIMIT_MINUTES)
+	{
+		debug(LOG_ERROR, "Invalid gameTimeLimitMinutes value specified: %" PRIu32 "; resetting to: %" PRIu32, game.gameTimeLimitMinutes, static_cast<uint32_t>(MIN_MPGAMETIMELIMIT_MINUTES));
+		game.gameTimeLimitMinutes = MIN_MPGAMETIMELIMIT_MINUTES;
+	}
+	NETuint32_t(&game.gameTimeLimitMinutes);
+	NETuint8_t(reinterpret_cast<uint8_t*>(&game.playerLeaveMode));
 
 	for (unsigned i = 0; i < MAX_PLAYERS; i++)
 	{
@@ -190,6 +197,20 @@ bool recvOptions(NETQUEUE queue)
 		debug(LOG_ERROR, "Invalid inactivityMinutes value specified: %" PRIu32, game.inactivityMinutes);
 		return false;
 	}
+	NETuint32_t(&game.gameTimeLimitMinutes);
+	if (game.gameTimeLimitMinutes > 0 && game.gameTimeLimitMinutes < MIN_MPGAMETIMELIMIT_MINUTES)
+	{
+		debug(LOG_ERROR, "Invalid gameTimeLimitMinutes value specified: %" PRIu32, game.gameTimeLimitMinutes);
+		return false;
+	}
+	uint8_t tempPlayerLeaveModeValue = 0;
+	NETuint8_t(&tempPlayerLeaveModeValue);
+	if (tempPlayerLeaveModeValue > static_cast<uint8_t>(PLAYER_LEAVE_MODE_MAX))
+	{
+		debug(LOG_ERROR, "Invalid playerLeaveMode value specified: %" PRIu8, tempPlayerLeaveModeValue);
+		return false;
+	}
+	game.playerLeaveMode = static_cast<PLAYER_LEAVE_MODE>(tempPlayerLeaveModeValue);
 
 	for (i = 0; i < MAX_PLAYERS; i++)
 	{
