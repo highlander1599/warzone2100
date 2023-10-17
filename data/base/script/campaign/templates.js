@@ -92,6 +92,7 @@ comtath: { body: "Body6SUPP", prop: "hover01", weap: "Rocket-LtA-T" },
 comtathh: { body: "Body6SUPP", prop: "HalfTrack", weap: "Rocket-LtA-T" },
 
 // CAM_2_C
+cohcv: { body: "Body12SUP", prop: "hover01", weap: "Cannon375mmMk1" },
 commorv: { body: "Body6SUPP", prop: "V-Tol", weap: "Bomb2-VTOL-HvHE" },
 colagv: { body: "Body2SUP", prop: "V-Tol", weap: "MG4ROTARY-VTOL" },
 comhpv: { body: "Body6SUPP", prop: "tracked01", weap: "Cannon4AUTOMk1" },
